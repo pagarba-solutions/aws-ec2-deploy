@@ -61,7 +61,7 @@ resource "tls_private_key" "example" {
 }
 
 resource "aws_key_pair" "generated_key" {
-  key_name   = "tf-key-pair6"
+  key_name   = var.deployment_name
   public_key = tls_private_key.example.public_key_openssh
 }
 
@@ -149,7 +149,19 @@ resource "aws_security_group" "allow_bentoml" {
 }
 
 resource "aws_launch_template" "lt" {
-  name                   = "${var.deployment_name}-lt"
+
+  name  = "${var.deployment_name}-lt"
+  
+  block_device_mappings {
+    device_name = "/dev/sda1"
+
+    ebs {
+      volume_size = 200
+      volume_type = "gp3"
+      encrypted = false
+    }
+  }
+
   image_id               = var.ami_id
   instance_type          = var.instance_type
   key_name               = aws_key_pair.generated_key.key_name
@@ -160,6 +172,9 @@ resource "aws_launch_template" "lt" {
   iam_instance_profile {
     arn = aws_iam_instance_profile.ip.arn
   }
+
+
+
 }
 
 resource "aws_instance" "app_server" {
@@ -170,7 +185,7 @@ resource "aws_instance" "app_server" {
   provisioner "local-exec" {
     command = <<-EOT
         attempt_counter=0
-        max_attempts=80
+        max_attempts=40
         printf 'waiting for server to start'
         until $(curl --output /dev/null --silent --head --fail http://${self.public_ip}); do
             if [ $attempt_counter -eq $max_attempts ];then

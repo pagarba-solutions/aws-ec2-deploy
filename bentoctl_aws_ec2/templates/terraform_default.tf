@@ -32,6 +32,10 @@ variable "ami_id" {
   type = string
 }
 
+variable "volume_size" {
+  type = number
+}
+
 variable "enable_gpus" {
   type = bool
 }
@@ -47,6 +51,8 @@ variable "image_version" {
 variable "image_tag" {
   type = string
 }
+
+
 
 ################################################################################
 # Resource definitions
@@ -126,9 +132,22 @@ resource "aws_security_group" "allow_bentoml" {
 }
 
 resource "aws_launch_template" "lt" {
-  name                   = "${var.deployment_name}-lt"
+
+  name  = "${var.deployment_name}-lt"
+  
+  block_device_mappings {
+    device_name = "/dev/sda1"
+
+    ebs {
+      volume_size = var.volume_size
+      volume_type = "gp3"
+      encrypted = false
+    }
+  }
+
   image_id               = var.ami_id
   instance_type          = var.instance_type
+  key_name               = aws_key_pair.generated_key.key_name
   update_default_version = true
   user_data              = filebase64("startup_script.sh")
   security_group_names   = [aws_security_group.allow_bentoml.name]
@@ -136,6 +155,9 @@ resource "aws_launch_template" "lt" {
   iam_instance_profile {
     arn = aws_iam_instance_profile.ip.arn
   }
+
+
+
 }
 
 resource "aws_instance" "app_server" {
