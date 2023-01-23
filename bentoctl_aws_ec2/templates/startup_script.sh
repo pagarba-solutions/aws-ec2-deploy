@@ -10,4 +10,4 @@ sudo ./aws/install
 ln -s /usr/bin/aws aws
 aws ecr get-login-password --region {region} |docker login --username AWS --password-stdin {registry_url}
 docker pull {image_tag}
-docker run -p {SERVICE_PORT}:{BENTOML_PORT} {gpu_flag} {image_tag}
+docker run -p {SERVICE_PORT}:{BENTOML_PORT} {gpu_flag} --restart always {image_tag}
