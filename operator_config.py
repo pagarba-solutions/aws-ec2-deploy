@@ -28,6 +28,10 @@ OPERATOR_SCHEMA = {
         "default": 200,
         "help_message": "Machine volume size in gigabytes",
     },
+    "random_signature": {
+        "type": "string",
+        "help_message": "Random signature created internally. Created to avoid multiple repository usage and high increase of wait time"
+    },
     "environment_variables": {
         "type": "list",
         "schema": {

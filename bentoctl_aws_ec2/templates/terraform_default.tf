@@ -40,6 +40,10 @@ variable "enable_gpus" {
   type = bool
 }
 
+variable "random_signature" {
+  type = string
+}
+
 variable "image_repository" {
   type = string
 }
@@ -59,7 +63,7 @@ variable "image_tag" {
 ################################################################################
 
 resource "aws_iam_role" "ec2_role" {
-  name = "${var.deployment_name}-iam"
+  name = "${var.deployment_name}-${var.random_signature}-iam"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -94,13 +98,13 @@ resource "aws_iam_role" "ec2_role" {
 }
 
 resource "aws_iam_instance_profile" "ip" {
-  name = "${var.deployment_name}-instance-profile"
+  name = "${var.deployment_name}-${var.random_signature}-instance-profile"
   role = aws_iam_role.ec2_role.name
 }
 
 
 resource "aws_security_group" "allow_bentoml" {
-  name        = "${var.deployment_name}-bentoml-sg"
+  name        = "${var.deployment_name}-${var.random_signature}-bentoml-sg"
   description = "SG for bentoml server"
 
   ingress {
@@ -133,10 +137,10 @@ resource "aws_security_group" "allow_bentoml" {
 
 resource "aws_launch_template" "lt" {
 
-  name  = "${var.deployment_name}-lt"
+  name  = "${var.deployment_name}-${var.random_signature}-lt"
   
   block_device_mappings {
-    device_name = "/dev/sda1"
+    device_name = "/dev/xvda"
 
     ebs {
       volume_size = var.volume_size
