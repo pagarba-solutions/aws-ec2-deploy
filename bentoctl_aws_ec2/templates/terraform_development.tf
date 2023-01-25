@@ -32,8 +32,16 @@ variable "ami_id" {
   type = string
 }
 
+variable "disk_size" {
+  type = number
+}
+
 variable "enable_gpus" {
   type = bool
+}
+
+variable "random_signature" {
+  type = string
 }
 
 variable "image_repository" {
@@ -49,7 +57,6 @@ variable "image_tag" {
 }
 
 
-
 ################################################################################
 # My custom editions
 ################################################################################
@@ -61,7 +68,7 @@ resource "tls_private_key" "example" {
 }
 
 resource "aws_key_pair" "generated_key" {
-  key_name   = var.deployment_name
+  key_name   = "${var.deployment_name}-${var.random_signature}-key"
   public_key = tls_private_key.example.public_key_openssh
 }
 
@@ -70,13 +77,12 @@ resource "local_file"  "generated_key" {
   filename = "tfkey"
 }
 
-
 ################################################################################
 # Resource definitions
 ################################################################################
 
 resource "aws_iam_role" "ec2_role" {
-  name = "${var.deployment_name}-iam"
+  name = "${var.deployment_name}-${var.random_signature}-iam"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -111,13 +117,13 @@ resource "aws_iam_role" "ec2_role" {
 }
 
 resource "aws_iam_instance_profile" "ip" {
-  name = "${var.deployment_name}-instance-profile"
+  name = "${var.deployment_name}-${var.random_signature}-instance-profile"
   role = aws_iam_role.ec2_role.name
 }
 
 
 resource "aws_security_group" "allow_bentoml" {
-  name        = "${var.deployment_name}-bentoml-sg"
+  name        = "${var.deployment_name}-${var.random_signature}-bentoml-sg"
   description = "SG for bentoml server"
 
   ingress {
@@ -150,18 +156,19 @@ resource "aws_security_group" "allow_bentoml" {
 
 resource "aws_launch_template" "lt" {
 
-  name  = "${var.deployment_name}-lt"
+  name  = "${var.deployment_name}-${var.random_signature}-lt"
   
   block_device_mappings {
-    device_name = "/dev/sda1"
+    device_name = "/dev/xvda"
 
     ebs {
-      volume_size = 200
+      volume_size = var.disk_size
       volume_type = "gp3"
       encrypted = false
     }
   }
 
+  
   image_id               = var.ami_id
   instance_type          = var.instance_type
   key_name               = aws_key_pair.generated_key.key_name
@@ -213,9 +220,3 @@ output "ec2_instance_status" {
   description = "Status of the created instance"
   value       = aws_instance.app_server.instance_state
 }
-
-
-# output "private_key" {
-#   value     = tls_private_key.example.private_key_pem
-#   sensitive = true
-# }

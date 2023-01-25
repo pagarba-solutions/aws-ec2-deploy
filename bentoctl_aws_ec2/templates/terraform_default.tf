@@ -32,7 +32,7 @@ variable "ami_id" {
   type = string
 }
 
-variable "volume_size" {
+variable "disk_size" {
   type = number
 }
 
@@ -143,12 +143,13 @@ resource "aws_launch_template" "lt" {
     device_name = "/dev/xvda"
 
     ebs {
-      volume_size = var.volume_size
+      volume_size = var.disk_size
       volume_type = "gp3"
       encrypted = false
     }
   }
 
+  
   image_id               = var.ami_id
   instance_type          = var.instance_type
   key_name               = aws_key_pair.generated_key.key_name

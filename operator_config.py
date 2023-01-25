@@ -23,7 +23,7 @@ OPERATOR_SCHEMA = {
         "coerce": bool,
         "help_message": "If using GPU-accelerated instance_types then ennable this.",
     },
-    "volume_size": {
+    "disk_size": {
         "type": "number",
         "default": 200,
         "help_message": "Machine volume size in gigabytes",
