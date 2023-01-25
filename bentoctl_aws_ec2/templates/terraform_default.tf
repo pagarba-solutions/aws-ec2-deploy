@@ -152,7 +152,6 @@ resource "aws_launch_template" "lt" {
   
   image_id               = var.ami_id
   instance_type          = var.instance_type
-  key_name               = aws_key_pair.generated_key.key_name
   update_default_version = true
   user_data              = filebase64("startup_script.sh")
   security_group_names   = [aws_security_group.allow_bentoml.name]
