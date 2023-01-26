@@ -57,25 +57,6 @@ variable "image_tag" {
 }
 
 
-################################################################################
-# My custom editions
-################################################################################
-
-
-resource "tls_private_key" "example" {
-  algorithm = "RSA"
-  rsa_bits  = 4096
-}
-
-resource "aws_key_pair" "generated_key" {
-  key_name   = "${var.deployment_name}-${var.random_signature}-key"
-  public_key = tls_private_key.example.public_key_openssh
-}
-
-resource "local_file"  "generated_key" {
-  content = tls_private_key.example.private_key_pem
-  filename = "tfkey"
-}
 
 ################################################################################
 # Resource definitions
@@ -128,6 +109,15 @@ resource "aws_security_group" "allow_bentoml" {
 
   ingress {
     description      = "HTTP for bentoml"
+    from_port        = 3000
+    to_port          = 3000
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+
+  ingress {
+    description      = "HTTP for bentoml"
     from_port        = 80
     to_port          = 80
     protocol         = "tcp"
@@ -136,14 +126,14 @@ resource "aws_security_group" "allow_bentoml" {
   }
 
   # Uncomment if you want to ennable ssh access into the instance. Not for prod.
-  ingress {
-    description      = "ssh access (incase, for debugging)"
-    from_port        = 22
-    to_port          = 22
-    protocol         = "tcp"
-    cidr_blocks      = ["0.0.0.0/0"]
-    ipv6_cidr_blocks = ["::/0"]
-  }
+  # ingress {
+  #   description      = "ssh access (incase, for debugging)"
+  #   from_port        = 22
+  #   to_port          = 22
+  #   protocol         = "tcp"
+  #   cidr_blocks      = ["0.0.0.0/0"]
+  #   ipv6_cidr_blocks = ["::/0"]
+  # }
 
   egress {
     from_port        = 0
@@ -171,7 +161,6 @@ resource "aws_launch_template" "lt" {
   
   image_id               = var.ami_id
   instance_type          = var.instance_type
-  key_name               = aws_key_pair.generated_key.key_name
   update_default_version = true
   user_data              = filebase64("startup_script.sh")
   security_group_names   = [aws_security_group.allow_bentoml.name]
@@ -192,7 +181,7 @@ resource "aws_instance" "app_server" {
   provisioner "local-exec" {
     command = <<-EOT
         attempt_counter=0
-        max_attempts=40
+        max_attempts=60
         printf 'waiting for server to start'
         until $(curl --output /dev/null --silent --head --fail http://${self.public_ip}); do
             if [ $attempt_counter -eq $max_attempts ];then
